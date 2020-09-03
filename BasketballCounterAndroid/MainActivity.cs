@@ -1,6 +1,9 @@
 ﻿using Android.App;
-using Android.Widget;
+using Android.Content;
+using Android.Media.Session;
 using Android.OS;
+using Android.Widget;
+using System.Diagnostics;
 
 namespace BasketballCounterAndroid
 {
@@ -8,20 +11,85 @@ namespace BasketballCounterAndroid
 	public class MainActivity : Activity
 	{
 		int count = 1;
+		int hit = 0;
+		int total = 0;
+
+		MediaSession ms = new MediaSession(Application.Context, "idkwhatthisis");
+
+		MediaReceiver mr = new MediaReceiver();
 
 		protected override void OnCreate(Bundle savedInstanceState)
 		{
 			base.OnCreate(savedInstanceState);
 
-			// Set our view from the "main" layout resource
 			SetContentView(Resource.Layout.Main);
 
-			// Get our button from the layout resource,
-			// and attach an event to it
 			Button button = FindViewById<Button>(Resource.Id.myButton);
-
 			button.Click += delegate { button.Text = string.Format("{0} clicks!", count++); };
+
+			TextView counter = FindViewById<TextView>(Resource.Id.text_counter);
+			FindViewById<Button>(Resource.Id.btn_miss).Click += delegate { counter.Text = string.Format("{0}/{1}", hit, ++total); };
+			FindViewById<Button>(Resource.Id.btn_hit).Click += delegate { counter.Text = string.Format("{0}/{1}", ++hit, ++total); };
+			FindViewById<Button>(Resource.Id.btn_reset).Click += delegate { counter.Text = string.Format("{0}/{1}", hit = 0, total = 0); };
+			FindViewById<Button>(Resource.Id.btn_dummy).Click += delegate { SendBroadcast(new Intent("DUMMY")); };
+
+			ms.SetCallback(new mediaCallBackController());
+			ms.SetFlags(MediaSessionFlags.HandlesMediaButtons | MediaSessionFlags.HandlesTransportControls);
+			ms.Active = true;
+
+			System.Diagnostics.Debug.WriteLine("OnCreate");
+		}
+		protected override void OnStart()
+		{
+			base.OnStart();
+			System.Diagnostics.Debug.WriteLine("OnStart");
+		}
+		protected override void OnResume()
+		{
+			base.OnResume();
+			RegisterReceiver(mr, getIntentFiler());
+			System.Diagnostics.Debug.WriteLine("OnResume");
+		}
+		protected override void OnStop()
+		{
+			base.OnStop();
+			System.Diagnostics.Debug.WriteLine("OnStop");
+		}
+		protected override void OnDestroy()
+		{
+			UnregisterReceiver(mr);
+			System.Diagnostics.Debug.WriteLine("OnDestroy");
+			base.OnDestroy();
+		}
+		private IntentFilter getIntentFiler()
+		{
+			IntentFilter intentFilter = new IntentFilter();
+			intentFilter.AddAction("android.intent.action.MEDIA_BUTTON");
+			intentFilter.AddAction("android.intent.action.HEADSET_PLUG");
+			intentFilter.AddAction("android.net.conn.CONNECTIVITY_CHANGE");
+			intentFilter.AddAction("DUMMY");
+			intentFilter.Priority = 999;
+			return intentFilter;
+		}
+		public override bool OnKeyDown(Android.Views.Keycode keyCode, Android.Views.KeyEvent e) {
+			System.Diagnostics.Debug.WriteLine("CAPTURED KEYCODE EVENT");
+			System.Diagnostics.Debug.WriteLine(keyCode);
+			//if (keyCode == KeyEvent.KEYCODE_HEADSETHOOK)
+			//{
+			//	//handle click
+			//	return true;
+			//}
+			return base.OnKeyDown(keyCode, e);
 		}
 	}
 }
 
+public class mediaCallBackController : MediaSession.Callback
+{
+	public override bool OnMediaButtonEvent(Intent mediaButtonIntent)
+	{
+		System.Diagnostics.Debug.WriteLine("CAPTURED MEDIA SESSION EVENT");
+		System.Diagnostics.Debug.WriteLine(mediaButtonIntent);
+		return true;
+	}
+}
