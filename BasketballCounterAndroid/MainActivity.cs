@@ -1,6 +1,6 @@
 ﻿using Android.App;
 using Android.Content;
-using Android.Media.Session;
+using Android.Media;
 using Android.OS;
 using Android.Widget;
 using System.Diagnostics;
@@ -13,8 +13,6 @@ namespace BasketballCounterAndroid
 		int count = 1;
 		int hit = 0;
 		int total = 0;
-
-		MediaSession ms = new MediaSession(Application.Context, "idkwhatthisis");
 
 		MediaReceiver mr = new MediaReceiver();
 
@@ -33,15 +31,14 @@ namespace BasketballCounterAndroid
 			FindViewById<Button>(Resource.Id.btn_reset).Click += delegate { counter.Text = string.Format("{0}/{1}", hit = 0, total = 0); };
 			FindViewById<Button>(Resource.Id.btn_dummy).Click += delegate { SendBroadcast(new Intent("DUMMY")); };
 
-			ms.SetCallback(new mediaCallBackController());
-			ms.SetFlags(MediaSessionFlags.HandlesMediaButtons | MediaSessionFlags.HandlesTransportControls);
-			ms.Active = true;
+			AudioFocusManager afm = new AudioFocusManager(Android.App.Application.Context);
 
 			System.Diagnostics.Debug.WriteLine("OnCreate");
 		}
 		protected override void OnStart()
 		{
 			base.OnStart();
+
 			System.Diagnostics.Debug.WriteLine("OnStart");
 		}
 		protected override void OnResume()
@@ -74,6 +71,7 @@ namespace BasketballCounterAndroid
 		public override bool OnKeyDown(Android.Views.Keycode keyCode, Android.Views.KeyEvent e) {
 			System.Diagnostics.Debug.WriteLine("CAPTURED KEYCODE EVENT");
 			System.Diagnostics.Debug.WriteLine(keyCode);
+			System.Diagnostics.Debug.WriteLine(e);
 			//if (keyCode == KeyEvent.KEYCODE_HEADSETHOOK)
 			//{
 			//	//handle click
@@ -81,15 +79,5 @@ namespace BasketballCounterAndroid
 			//}
 			return base.OnKeyDown(keyCode, e);
 		}
-	}
-}
-
-public class mediaCallBackController : MediaSession.Callback
-{
-	public override bool OnMediaButtonEvent(Intent mediaButtonIntent)
-	{
-		System.Diagnostics.Debug.WriteLine("CAPTURED MEDIA SESSION EVENT");
-		System.Diagnostics.Debug.WriteLine(mediaButtonIntent);
-		return true;
 	}
 }
